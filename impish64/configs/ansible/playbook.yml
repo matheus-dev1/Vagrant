@@ -1,0 +1,37 @@
+- hosts: all #Quem são os hosts!
+  handlers:
+    - name: restart mysql
+      service:
+        name: mysql
+        state: restarted
+      become: yes
+
+  tasks: #Ações dentro da maquina.
+    - name: 'Instalar MySQL Server' #Apelido de uma ação/task.
+      apt: # O comando em que ele usa.
+        update_cache: yes #Pra executar esta tarefa o cache precisa ser atualizado.
+        cache_valid_time: 3600 #Valido por 1 hora.
+        name: ["mysql-server", "python3-mysqldb"] #Pacotes que serão instalados.
+        state: latest #Na ultima versão.
+      become: yes #Deve ser feito a partir do root.
+
+    - name: 'Criar usuario no MySQL'
+      mysql_user:
+        login_user: root
+        name: phpuser
+        password: pass
+        priv: '*.*:ALL'
+        host: '%'
+        state: present
+      become: yes
+
+    - name: 'Copiar arquivo mysqld.cnf'
+      copy:
+        src: /vagrant/configs/mysqld.cnf
+        dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+        owner: root #Usuario
+        group: root #Grupo
+        mode: 0644 #Permissões
+      become: yes
+      notify:
+        - restart mysql #Depois de fazer ESTÁ tarega reinicie o mysql.
